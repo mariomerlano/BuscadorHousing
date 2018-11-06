@@ -1,77 +1,72 @@
 import React from 'react';
-import { StyleSheet, Text, View, ScrollView } from 'react-native';
+import { Text, View, ScrollView } from 'react-native';
+
+import styles from './Estilos/Estilos';
+import House from './Componentes/House';
+
 import cheerio from './node_modules/cheerio-without-node-native';
 
 
-export default class App extends React.Component {
 
-  buscarPagina() {
-    const searchUrl = "http://www.campingunquehue.com.ar/es/index.php";
-    const response = fetch(searchUrl);  // fetch page 
-    response.then((value)=>
-    { 
-    const htmlString = value.text; // get response text
-    const $ = cheerio.load(htmlString);
-    alert(value.text);
-    }       // parse HTML string
-    );
-   
-  }
+export default class App extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            listaHouses: []
+        };
+    }
+
+    buscarPagina() {
+        const searchUrl = "http://www.campingunquehue.com.ar/es/index.php";
+        const response = fetch(searchUrl);  // fetch page 
+        response.then((value) => {
+            const htmlString = value.text; // get response text
+            const $ = cheerio.load(htmlString);
+            alert(value.text);
+        }       // parse HTML string
+        );
+
+    }
+
+    cargarHouses() {
+        var aux = this.state.lista;
+        if (aux.length !== 0) {
+            return aux.map((value, index) =>
+                <House item={value} key={index}/>
+            );
+        }
+        return (
+            <Text style={styles.texto}>No hay elementos cargados</Text>
+        );
+    }
+
 
     render() {
-      return (
-        <View>
-        {this.buscarPagina()}
-        </View>
+        return (
+            <View style={styles.container}>
+                <ScrollView style={styles.agregarBordes}>
+                    <House item={item1} />
+                    <House item={item1} />
+                    <House item={item1} />
+              </ScrollView>
+          </View>
       );
     }
 }
 
+const item = {
+    checkIn: "",
+    checkOut: "",
+    nombre: "",
+    lugar: "",
+    precio: ""
+};
 
+const item1 = {
+    checkIn: "15/08/1996",
+    checkOut: "20/08/1997",
+    nombre: "Agusto",
+    lugar: "Breckenridge",
+    precio: "1920"
+};
 
-
-
-
-
-/*
-
-
-
-async function loadGraphicCards(page = 1) {
-  const searchUrl = `https://www.amazon.de/s/?page=${page}&keywords=graphic+card`;
-  const response = await fetch(searchUrl);   // fetch page
-
-  const htmlString = await response.text();  // get response text
-}
-
-async function loadGraphicCards(page = 1) {
-  const searchUrl = `https://www.amazon.de/s/?page=${page}&keywords=graphic+card`;
-  const response = await fetch(searchUrl);      // fetch page 
-
-  const htmlString = await response.text();     // get response text
-  const $ = cheerio.load(htmlString);           // parse HTML string
-
-  const liList = $("#s-results-list-atf > li"); // select result <li>s
-}
-
-
-
-
-export default class App extends React.Component {
-  render() {
-    return (
-      <View style={styles.container}>
-        <Text>Open up App.js to start working on your app!</Text>
-      </View>
-    );
-  }
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});*/
