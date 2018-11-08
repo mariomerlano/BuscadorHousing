@@ -1,20 +1,30 @@
 import React from 'react';
-import { Text, View, ScrollView } from 'react-native';
+import { Text, View, Linking, TouchableOpacity } from 'react-native';
 import styles from '../Estilos/Estilos';
 
 export default class House extends React.Component {
 	constructor(props){	
-		super(props);
-	}
+        super(props);
+    }
+    abrirLink() {
+        Linking.openURL(this.props.item.link).catch(err => console.error('An error occurred', err));
+    }
     render() {
         return (
-            <View style={[styles.agregarBordes, { padding: 30 }]}>
-                <Text>Lugar: {this.props.item.lugar}</Text>
-                <Text>Nombre: {this.props.item.nombre}</Text>
-                <Text>Precio: {this.props.item.precio}</Text>
-                <Text>Check In: {this.props.item.checkIn}</Text>
-                <Text>Check Out: {this.props.item.checkOut}</Text>
-            </View>
+            <TouchableOpacity style={styles.agregarBordes} onPress={this.abrirLink.bind(this)}>
+                <Text style={[styles.title, {alignSelf:'center'}]}>{this.props.item.titulo}</Text>
+                <View style={styles.house}>
+                    <View style={{ flexDirection: 'column' }}>
+                        <Text>{this.props.item.personas} personas</Text>
+                        <Text style={{ alignSelf:'center' }}>(${this.props.item.amountPP})</Text>
+                    </View>
+                    <Text>{this.props.item.precio + " " + this.props.item.moneda}</Text>
+                    <View style={[styles.agregarBordes, { padding: 10, backgroundColor: "#b3d1ff" }]}>
+                        <Text>{this.props.item.lugar}</Text>
+                    </View>
+                </View>
+              
+            </TouchableOpacity>
            
             );
     }

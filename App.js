@@ -1,72 +1,129 @@
 import React from 'react';
-import { Text, View, ScrollView } from 'react-native';
+import { Text, View, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 
 import styles from './Estilos/Estilos';
 import House from './Componentes/House';
 
 import cheerio from './node_modules/cheerio-without-node-native';
-
-
+import htmlparser2 from './node_modules/htmlparser2-without-node-native';
+import Moment from 'moment';
 
 export default class App extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            listaHouses: []
+            listaHouses: [],
+            checkin: Moment().add(0, "day"),
+            checkout: Moment().add(1, "day"),
+        };
+
+        //Moment().add(1, "day").format('ll')
+    }
+
+    componentDidMount() {
+        this.actualizarLista();
+
+            /*var option = {
+                xml: {
+                    normalizeWhitespace: true
+                }
+            };
+            console.log(value);
+            const dom = htmlparser2.parseDOM(value, option);
+            const $ = cheerio.load(dom);
+            var lista = $("itemdrop");
+            this.setState({
+                listaHouses: lista
+            }); Descomentar para manejar html con cheerio*/
+    }
+
+    parsearItemAirBNB(itemCrudo, checkIn, checkOut) {
+        var personasx = itemCrudo.listing.person_capacity;
+        var id = itemCrudo.listing.id;
+        var amount = itemCrudo.pricing_quote.price.total.amount;
+        var precio = itemCrudo.pricing_quote.price.total.amount_formatted;
+        return {
+            titulo: itemCrudo.listing.name,
+            lugar: itemCrudo.listing.city,
+            personas: personasx,
+            amount: amount, //Precio sin formatear para poder ordenar
+            amountPP: Math.round(amount / personasx), //Amount per person
+            precio: precio,
+            moneda: itemCrudo.pricing_quote.price.total.currency,
+            link: `https://www.airbnb.com.ar/rooms/${id}?adults=${personasx}&children=0&infants=0&guests=${personasx}&toddlers=0&check_in=${checkIn}&check_out=${checkOut}`
         };
     }
 
-    buscarPagina() {
-        const searchUrl = "http://www.campingunquehue.com.ar/es/index.php";
-        const response = fetch(searchUrl);  // fetch page 
-        response.then((value) => {
-            const htmlString = value.text; // get response text
-            const $ = cheerio.load(htmlString);
-            alert(value.text);
-        }       // parse HTML string
-        );
-
+    async buscarBNB(personas, checkIn, checkOut, moneda) {
+        var link = `https://www.airbnb.com.ar/api/v2/explore_tabs?version=1.3.9&satori_version=1.1.0&_format=for_explore_search_web&experiences_per_grid=20&items_per_grid=10000&guidebooks_per_grid=20&auto_ib=false&fetch_filters=true&has_zero_guest_treatment=false&is_guided_search=true&is_new_cards_experiment=true&luxury_pre_launch=true&query_understanding_enabled=true&show_groupings=true&supports_for_you_v3=true&timezone_offset=-180&client_session_id=ed748e8f-b462-45a5-b75b-51961e10e464&metadata_only=false&is_standard_search=true&refinement_paths%5B%5D=%2Fhomes&selected_tab_id=home_tab&checkin=${checkIn}&checkout=${checkOut}&adults=${personas}&children=0&infants=0&guests=${personas}&toddlers=0&allow_override%5B%5D=&zoom=11&search_by_map=true&sw_lat=39.29977556422909&sw_lng=-106.35805457945469&ne_lat=39.667175182838164&ne_lng=-105.74762672300938&s_tag=sDTmh-LR&screen_size=medium&query=Breckenridge%2C%20Colorado%2C%20Estados%20Unidos&_intents=p1&key=d306zoyjsyarp7ifhu67rjxn52tv0t20&currency=${moneda}&locale=es-419`;
+        const response = await fetch(link);
+        return await response.json();
     }
 
     cargarHouses() {
-        var aux = this.state.lista;
+        var aux = this.state.listaHouses;
         if (aux.length !== 0) {
             return aux.map((value, index) =>
-                <House item={value} key={index}/>
+                <House item={value} key={index} />
             );
         }
-        return (
-            <Text style={styles.texto}>No hay elementos cargados</Text>
-        );
     }
 
+    formatDate(date) {
+        var moment = Moment(date);
+        moment.locale('es');
+        return moment.format('ll'); 
+    }
 
+    diaSiguiente() {
+        this.setState({
+            checkin: this.state.checkin.add(1, "day"),
+            checkout: this.state.checkout.add(1, "day"),
+            listaHouses: []
+        });
+        this.actualizarLista();
+    }
+
+    actualizarLista() {
+        var moneda = "USD";
+        var checkin = this.state.checkin.format("YYYY-MM-DD");
+        var checkout = this.state.checkout.format("YYYY-MM-DD");
+        this.buscarBNB(4, checkin, checkout, moneda).then(value => {
+            var housings = value.explore_tabs[0].sections[1].listings;
+            var lista = housings.map(x => this.parsearItemAirBNB(x));
+            this.setState({
+                listaHouses: lista.sort((a, b) => a.amountPP > b.amountPP) //Ordena por precio
+            });
+        });
+    }
     render() {
         return (
             <View style={styles.container}>
-                <ScrollView style={styles.agregarBordes}>
-                    <House item={item1} />
-                    <House item={item1} />
-                    <House item={item1} />
-              </ScrollView>
+                {this.state.listaHouses.length === 0 ? <ActivityIndicator style={styles.container} size="large" color="#0000ff" /> : null}
+                <View style={[styles.header, styles.agregarBordes, { backgroundColor: '#99ffeb' }]}>
+                    <Text style={styles.texto}>{this.formatDate(this.state.checkin)} </Text>
+                    <Text style={styles.texto}>----></Text>
+                    <TouchableOpacity onPress={this.diaSiguiente.bind(this)}>
+                        <Text style={styles.texto}>{this.formatDate(this.state.checkout)}</Text>
+                    </TouchableOpacity>
+                </View>
+                <ScrollView>
+                    {this.cargarHouses()}
+                </ScrollView>
           </View>
       );
     }
 }
 
 const item = {
-    checkIn: "",
-    checkOut: "",
-    nombre: "",
+    titulo: "",
     lugar: "",
-    precio: ""
+    personas: "",
+    link:"",
+    precio: "",
+    moneda: "",
+    fuente:""
 };
 
-const item1 = {
-    checkIn: "15/08/1996",
-    checkOut: "20/08/1997",
-    nombre: "Agusto",
-    lugar: "Breckenridge",
-    precio: "1920"
-};
+
 
