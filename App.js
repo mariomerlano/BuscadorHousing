@@ -13,8 +13,8 @@ export default class App extends React.Component {
         super(props);
         this.state = {
             listaHouses: [],
-            checkin: Moment().add(0, "day"),
-            checkout: Moment().add(1, "day"),
+            checkin: Moment('2018-12-08'),
+            checkout: Moment('2018-12-09'),
         };
 
         //Moment().add(1, "day").format('ll')
@@ -42,6 +42,7 @@ export default class App extends React.Component {
         var id = itemCrudo.listing.id;
         var amount = itemCrudo.pricing_quote.price.total.amount;
         var precio = itemCrudo.pricing_quote.price.total.amount_formatted;
+        console.log(personasx);
         return {
             titulo: itemCrudo.listing.name,
             lugar: itemCrudo.listing.city,
@@ -90,6 +91,9 @@ export default class App extends React.Component {
         var checkout = this.state.checkout.format("YYYY-MM-DD");
         this.buscarBNB(4, checkin, checkout, moneda).then(value => {
             var housings = value.explore_tabs[0].sections[1].listings;
+            if (housings === undefined) {// Hay veces que las houses vienen en section[0]
+                housings = value.explore_tabs[0].sections[0].listings;
+            }
             var lista = housings.map(x => this.parsearItemAirBNB(x));
             this.setState({
                 listaHouses: lista.sort((a, b) => a.amountPP > b.amountPP) //Ordena por precio
